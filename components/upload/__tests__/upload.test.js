@@ -1,6 +1,6 @@
 /* eslint-disable react/no-string-refs, react/prefer-es6-class */
 import React from 'react';
-import { mount } from 'enzyme';
+import { mount, render } from 'enzyme';
 import { act } from 'react-dom/test-utils';
 import produce from 'immer';
 import { cloneDeep } from 'lodash';
@@ -283,6 +283,20 @@ describe('Upload', () => {
     jest.runAllTimers();
     expect(ref.current.fileList).toEqual(fileList);
     jest.useRealTimers();
+  });
+
+  it('should be able to get uid at first', () => {
+    const fileList = [
+      {
+        name: 'foo.png',
+        status: 'done',
+        url: 'http://www.baidu.com/xxx.png',
+      },
+    ];
+    render(<Upload fileList={fileList} />);
+    fileList.forEach(file => {
+      expect(file.uid).toBeDefined();
+    });
   });
 
   describe('util', () => {
@@ -797,6 +811,29 @@ describe('Upload', () => {
 
     ['uid', 'name', 'lastModified', 'lastModifiedDate', 'size', 'type'].forEach(key => {
       expect(key in clone).toBeTruthy();
+    });
+  });
+
+  it('not break on freeze object', async () => {
+    const fileList = [
+      {
+        fileName: 'Test.png',
+        name: 'SupportIS App - potwierdzenie.png',
+        thumbUrl: null,
+        downloadUrl: 'https://localhost:5001/api/files/ff2917ce-e4b9-4542-84da-31cdbe7c273f',
+        status: 'done',
+      },
+    ];
+
+    const frozenFileList = fileList.map(file => Object.freeze(file));
+
+    const wrapper = mount(<Upload fileList={frozenFileList} />);
+    const rmBtn = wrapper.find('.ant-upload-list-item-card-actions-btn').last();
+    rmBtn.simulate('click');
+
+    // Wait for Upload async remove
+    await act(async () => {
+      await sleep();
     });
   });
 });

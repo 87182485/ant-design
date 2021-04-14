@@ -85,6 +85,18 @@ describe('TextArea', () => {
       expect(wrapper.find('textarea').props().value).toEqual('light');
     });
 
+    it('should limit correctly when in control', () => {
+      const Demo = () => {
+        const [val, setVal] = React.useState('');
+        return <TextArea maxLength={1} value={val} onChange={e => setVal(e.target.value)} />;
+      };
+
+      const wrapper = mount(<Demo />);
+      wrapper.find('textarea').simulate('change', { target: { value: 'light' } });
+
+      expect(wrapper.find('textarea').props().value).toEqual('l');
+    });
+
     it('should exceed maxLength when use IME', () => {
       const onChange = jest.fn();
 
@@ -366,5 +378,37 @@ describe('TextArea allowClear', () => {
   it('should display defaultValue when value is undefined', () => {
     const wrapper = mount(<Input.TextArea defaultValue="Light" value={undefined} />);
     expect(wrapper.find('textarea').at(0).getDOMNode().value).toBe('Light');
+  });
+
+  it('onChange event should return HTMLInputElement', () => {
+    const onChange = jest.fn();
+    const wrapper = mount(<Input.TextArea onChange={onChange} allowClear />);
+
+    function isNativeElement() {
+      expect(onChange).toHaveBeenCalledWith(
+        expect.objectContaining({
+          target: wrapper.find('textarea').instance(),
+        }),
+      );
+
+      onChange.mockReset();
+    }
+
+    // Change
+    wrapper.find('textarea').simulate('change', {
+      target: {
+        value: 'bamboo',
+      },
+    });
+    isNativeElement();
+
+    // Composition End
+    wrapper.find('textarea').instance().value = 'light'; // enzyme not support change `currentTarget`
+    wrapper.find('textarea').simulate('compositionEnd');
+    isNativeElement();
+
+    // Reset
+    wrapper.find('.ant-input-clear-icon').first().simulate('click');
+    isNativeElement();
   });
 });
